@@ -1,32 +1,32 @@
 <?php
 
 class ContaBancaria {
-    private $cliente;
-    private $historicoTransacoes;
+    private $nomeCliente;
+    private $transacoes;
     private $saldo;
 
-    public function __construct($cliente, $saldo) {
-        $this->cliente = $cliente;
-        $this->saldo = $saldo;
-        $this->historicoTransacoes = [];
+    public function __construct($nomeCliente, $saldoInicial) {
+        $this->nomeCliente = $nomeCliente;
+        $this->saldo = $saldoInicial;
+        $this->transacoes = [];
     }
 
-    public function getHistoricoTransacoes() {
-        return $this->historicoTransacoes;
+    public function getTransacoes() {
+        return $this->transacoes;
     }
 
     public function transferir($valor, ContaBancaria $contaDestino) {
         if ($this->saldo >= $valor) {
             $this->saldo -= $valor;
-            $contaDestino->deposito($valor);
-            $this->addTransacao('transferência enviada', $valor);
-            $contaDestino->addTransacao('transferência recebida', $valor);
+            $contaDestino->depositar($valor);
+            $this->registrarTransacao('Transferência enviada', $valor);
+            $contaDestino->registrarTransacao('Transferência recebida', $valor);
         } else {
             echo "Saldo insuficiente para transferência.";
         }
     }
 
-    public function saque($valor) {
+    public function sacar($valor) {
         if ($valor <= 0) {
             echo "Valor inválido para saque.";
             return;
@@ -34,7 +34,7 @@ class ContaBancaria {
 
         if ($this->saldo >= $valor) {
             $this->saldo -= $valor;
-            $this->addTransacao('saque', $valor);
+            $this->registrarTransacao('Saque', $valor);
         } else {
             echo "Saldo insuficiente.";
         }
@@ -44,35 +44,35 @@ class ContaBancaria {
         return $this->saldo;
     }
 
-    public function calcularJuros($taxa) {
-        if ($taxa <= 0) {
+    public function aplicarJuros($taxaPercentual) {
+        if ($taxaPercentual <= 0) {
             echo "Taxa inválida.";
             return;
         }
-        $juros = $this->saldo * ($taxa / 100);
+        $juros = $this->saldo * ($taxaPercentual / 100);
         $this->saldo += $juros;
-        $this->addTransacao('juros adicionados', $juros);
+        $this->registrarTransacao('Juros adicionados', $juros);
     }
 
-    private function addTransacao($tipo, $valor) {
-        $this->historicoTransacoes[] = [
-            'tipo' => $tipo,
+    private function registrarTransacao($descricao, $valor) {
+        $this->transacoes[] = [
+            'descricao' => $descricao,
             'valor' => $valor,
             'data' => date('Y-m-d H:i:s')
         ];
     }
 
-    public function deposito($valor) {
+    public function depositar($valor) {
         if ($valor <= 0) {
             echo "Valor inválido para depósito.";
             return;
         }
 
         $this->saldo += $valor;
-        $this->addTransacao('depósito', $valor);
+        $this->registrarTransacao('Depósito', $valor);
     }
 
-    public function getCliente() {
-        return $this->cliente;
+    public function getNomeCliente() {
+        return $this->nomeCliente;
     }
 }
