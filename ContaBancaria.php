@@ -1,78 +1,66 @@
 <?php
 
 class ContaBancaria {
-    private $nomeCliente;
-    private $transacoes;
+    private $cliente;
     private $saldo;
+    private $historicoTransacoes = [];
 
-    public function __construct($nomeCliente, $saldoInicial) {
-        $this->nomeCliente = $nomeCliente;
+    public function __construct($cliente, $saldoInicial) {
+        $this->cliente = $cliente;
         $this->saldo = $saldoInicial;
-        $this->transacoes = [];
     }
 
-    public function getTransacoes() {
-        return $this->transacoes;
-    }
-
-    public function transferir($valor, ContaBancaria $contaDestino) {
-        if ($this->saldo >= $valor) {
-            $this->saldo -= $valor;
-            $contaDestino->depositar($valor);
-            $this->registrarTransacao('Transferência enviada', $valor);
-            $contaDestino->registrarTransacao('Transferência recebida', $valor);
-        } else {
-            echo "Saldo insuficiente para transferência.";
+    public function depositar($valor) {
+        if ($valor <= 0) {
+            throw new Exception("Valor inválido para depósito.");
         }
+        $this->saldo += $valor;
+        $this->addTransacao('Depósito', $valor);
     }
 
     public function sacar($valor) {
         if ($valor <= 0) {
-            echo "Valor inválido para saque.";
-            return;
+            throw new Exception("Valor inválido para saque.");
         }
+        if ($valor > $this->saldo) {
+            throw new Exception("Saldo insuficiente.");
+        }
+        $this->saldo -= $valor;
+        $this->addTransacao('Saque', $valor);
+    }
 
-        if ($this->saldo >= $valor) {
-            $this->saldo -= $valor;
-            $this->registrarTransacao('Saque', $valor);
-        } else {
-            echo "Saldo insuficiente.";
+    public function transferir($valor, ContaBancaria $contaDestino) {
+        if ($valor > $this->saldo) {
+            throw new Exception("Saldo insuficiente para transferência.");
         }
+        $this->sacar($valor);
+        $contaDestino->depositar($valor);
+        $this->addTransacao('Transferência Enviada', $valor);
+        $contaDestino->addTransacao('Transferência Recebida', $valor);
+    }
+
+    public function calcularJuros($taxa) {
+        if ($taxa <= 0) {
+            throw new Exception("Taxa inválida.");
+        }
+        $juros = ($this->saldo * $taxa) / 100;
+        $this->saldo += $juros;
+        $this->addTransacao('Juros', $juros);
     }
 
     public function getSaldo() {
         return $this->saldo;
     }
 
-    public function aplicarJuros($taxaPercentual) {
-        if ($taxaPercentual <= 0) {
-            echo "Taxa inválida.";
-            return;
-        }
-        $juros = $this->saldo * ($taxaPercentual / 100);
-        $this->saldo += $juros;
-        $this->registrarTransacao('Juros adicionados', $juros);
+    public function getCliente() {
+        return $this->cliente;
     }
 
-    private function registrarTransacao($descricao, $valor) {
-        $this->transacoes[] = [
-            'descricao' => $descricao,
-            'valor' => $valor,
-            'data' => date('Y-m-d H:i:s')
-        ];
+    public function getHistoricoTransacoes() {
+        return $this->historicoTransacoes;
     }
 
-    public function depositar($valor) {
-        if ($valor <= 0) {
-            echo "Valor inválido para depósito.";
-            return;
-        }
-
-        $this->saldo += $valor;
-        $this->registrarTransacao('Depósito', $valor);
-    }
-
-    public function getNomeCliente() {
-        return $this->nomeCliente;
+    private function addTransacao($tipo, $valor) {
+        $this->historicoTransacoes[] = ['tipo' => $tipo, 'valor' => $valor, 'data' => date('Y-m-d H:i:s')];
     }
 }

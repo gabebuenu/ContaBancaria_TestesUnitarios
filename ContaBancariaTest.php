@@ -4,81 +4,94 @@ require_once 'ContaBancaria.php';
 use PHPUnit\Framework\TestCase;
 
 class ContaBancariaTest extends TestCase {
-    private $primeiraConta;
-    private $segundaConta;
-    private $terceiraConta;
+    private $conta1;
+    private $conta2;
 
     protected function setUp(): void {
-        $this->primeiraConta = new ContaBancaria('Titular 1', 1000);
-        $this->segundaConta = new ContaBancaria('Titular 2', 500);
-        $this->terceiraConta = new ContaBancaria('Titular 3', 2000);
+        $this->conta1 = new ContaBancaria('Cliente 1', 1000);
+        $this->conta2 = new ContaBancaria('Cliente 2', 500);
     }
 
-    public function testDepositar() {
-        $this->primeiraConta->depositar(500);
-        $this->assertEquals(1500, $this->primeiraConta->getSaldo());
+    public function testeDepositar() {
+        $this->conta1->depositar(500);
+        $this->assertEquals(1500, $this->conta1->getSaldo());
 
-        // Teste de exceção para depósito de valor negativo
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Valor inválido para depósito.");
-        $this->primeiraConta->depositar(-100);
+        $this->conta1->depositar(-100);
+
+        $historico = $this->conta1->getHistoricoTransacoes();
+        $this->assertCount(1, $historico);
+        $this->assertEquals('Depósito', $historico[0]['tipo']);
+        $this->assertEquals(500, $historico[0]['valor']);
     }
 
-    public function testSacar() {
-        $this->primeiraConta->sacar(200);
-        $this->assertEquals(800, $this->primeiraConta->getSaldo());
+    public function testeSacar() {
+        $this->conta1->sacar(200);
+        $this->assertEquals(800, $this->conta1->getSaldo());
 
-        // Teste de exceção para saque com valor maior que o saldo
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Saldo insuficiente.");
-        $this->primeiraConta->sacar(1000);
+        $this->conta1->sacar(1000);
 
-        // Teste de exceção para saque de valor negativo
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Valor inválido para saque.");
-        $this->primeiraConta->sacar(-50);
+        $this->conta1->sacar(-50);
+
+        $historico = $this->conta1->getHistoricoTransacoes();
+        $this->assertCount(2, $historico); 
+        $this->assertEquals('Saque', $historico[1]['tipo']);
+        $this->assertEquals(200, $historico[1]['valor']);
     }
 
-    public function testTransferencia() {
-        $this->primeiraConta->transferir(200, $this->segundaConta);
-        $this->assertEquals(800, $this->primeiraConta->getSaldo());
-        $this->assertEquals(700, $this->segundaConta->getSaldo());
+    public function testeTransferir() {
+        $this->conta1->transferir(200, $this->conta2);
+        $this->assertEquals(800, $this->conta1->getSaldo());
+        $this->assertEquals(700, $this->conta2->getSaldo());
 
-        // Teste de exceção para transferência com valor maior que o saldo
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Saldo insuficiente para transferência.");
-        $this->primeiraConta->transferir(1000, $this->segundaConta);
+        $this->conta1->transferir(1000, $this->conta2);
+
+        $historico1 = $this->conta1->getHistoricoTransacoes();
+        $historico2 = $this->conta2->getHistoricoTransacoes();
+        $this->assertCount(1, $historico1); 
+        $this->assertCount(1, $historico2); 
     }
 
-    public function testAplicarJuros() {
-        $this->primeiraConta->aplicarJuros(10);
-        $this->assertEquals(1100, $this->primeiraConta->getSaldo());
+    public function testeCalcularJuros() {
+        $this->conta1->calcularJuros(10);
+        $this->assertEquals(1100, $this->conta1->getSaldo());
 
-        // Teste de exceção para taxa de juros negativa
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Taxa inválida.");
-        $this->primeiraConta->aplicarJuros(-5);
+        $this->conta1->calcularJuros(-5);
+
+        $historico = $this->conta1->getHistoricoTransacoes();
+        $this->assertCount(1, $historico);
+        $this->assertEquals('Juros', $historico[0]['tipo']);
+        $this->assertEquals(100, $historico[0]['valor']);
     }
 
-    public function testConsultarSaldo() {
-        $this->assertEquals(1000, $this->primeiraConta->getSaldo());
-        $this->primeiraConta->depositar(500);
-        $this->assertEquals(1500, $this->primeiraConta->getSaldo());
+    public function testeGetSaldo() {
+        $this->assertEquals(1000, $this->conta1->getSaldo());
+        $this->conta1->depositar(500);
+        $this->assertEquals(1500, $this->conta1->getSaldo());
     }
 
-    public function testObterNomeCliente() {
-        $this->assertEquals('Titular 1', $this->primeiraConta->getNomeCliente());
+    public function testeGetCliente() {
+        $this->assertEquals('Cliente 1', $this->conta1->getCliente());
     }
 
-    public function testConsultarTransacoes() {
-        $this->primeiraConta->depositar(200);
-        $this->primeiraConta->sacar(100);
-        $transacoes = $this->primeiraConta->getTransacoes();
+    public function testeGetHistoricoTransacoes() {
+        $this->conta1->depositar(200);
+        $this->conta1->sacar(100);
+        $transacoes = $this->conta1->getHistoricoTransacoes();
 
         $this->assertCount(2, $transacoes);
-        $this->assertEquals('Depósito', $transacoes[0]['descricao']);
+        $this->assertEquals('Depósito', $transacoes[0]['tipo']);
         $this->assertEquals(200, $transacoes[0]['valor']);
-        $this->assertEquals('Saque', $transacoes[1]['descricao']);
+        $this->assertEquals('Saque', $transacoes[1]['tipo']);
         $this->assertEquals(100, $transacoes[1]['valor']);
     }
 }
